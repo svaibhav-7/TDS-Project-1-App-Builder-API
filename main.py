@@ -41,16 +41,19 @@ def get_application() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Add startup and shutdown event handlers
-    app.add_event_handler("startup", create_start_app_handler(app))
-    app.add_event_handler("shutdown", create_stop_app_handler(app))
+    # Root endpoint - defined before including other routers
+    @app.get("/")
+    async def root():
+        """Root endpoint with welcome message and API information."""
+        return {
+            "message": f"Welcome to {settings.APP_NAME}",
+            "version": "1.0.0",
+            "docs": "/docs",
+            "redoc": "/redoc",
+            "health_check": "/health"
+        }
 
-    # Include API routers
-    app.include_router(api_router, prefix=f"{settings.API_PREFIX}")
-
-    
-
-    # Add health check endpoint
+    # Health check endpoint
     @app.get("/health")
     async def health_check():
         """Health check endpoint."""
@@ -59,6 +62,13 @@ def get_application() -> FastAPI:
             "version": app.version,
             "environment": "development" if settings.DEBUG else "production"
         }
+
+    # Add startup and shutdown event handlers
+    app.add_event_handler("startup", create_start_app_handler(app))
+    app.add_event_handler("shutdown", create_stop_app_handler(app))
+
+    # Include API routers
+    app.include_router(api_router, prefix=f"{settings.API_PREFIX}")
 
     return app
 
